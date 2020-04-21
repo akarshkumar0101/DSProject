@@ -129,9 +129,12 @@ dmypy.json
 .pyre/
 
 # animation picture folders
-mnist_gan/
+mnist/
 
+.DS_Store
 
+samples/
+datasets/
 
 
 
