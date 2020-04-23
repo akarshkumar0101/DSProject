@@ -1,2 +1,6 @@
 # DSProject
-DSL DSP Combined Term Project.
+Our DSL DSP Combined Term Project! 
+by Akarsh Kumar, ...
+
+We are trying to seperate mixed audio signals into its component parts. 
+The example we are dealing with is seperating an audio signal into one or more speech and noise signals.
