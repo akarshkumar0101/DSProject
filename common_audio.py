@@ -73,3 +73,17 @@ def show_spectrogram(spectrogram, sr):
     plt.colorbar(format='%2.2f')
     plt.title('Mel-frequency spectrogram')
     plt.tight_layout()
+    
+
+# sets sample_length of y by either cropping or by duplicating to length
+def set_sample_length(y, sample_length):
+    if len(y) > sample_length:
+        y = y[:sample_length]
+    if len(y) < sample_length:
+        factor = sample_length//len(y)
+        oy = y.copy()
+        for i in range(factor-1):
+            y = np.concatenate((y, oy), axis=0)
+        leftover = sample_length - len(y)
+        y = np.concatenate((y, oy[:leftover]), axis=0)
+    return y
