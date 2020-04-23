@@ -9,7 +9,8 @@ from IPython.display import Audio, display, clear_output
 
 def play_audio(y, sr, autoplay=False):
     display(Audio(y, rate=sr, autoplay=autoplay))
-    
+
+# TODO: add the f_max=8000 term in melspectrogram (but this breaks the spectrogram_to_audio)
 def audio_to_spectrogram(y, sr, normalize=True):
     spectrogram = librosa.feature.melspectrogram(y=y, sr=sr)
     spectrogram = librosa.power_to_db(spectrogram, ref=np.max)
