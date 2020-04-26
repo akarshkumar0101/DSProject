@@ -7,84 +7,57 @@ import librosa, librosa.display
 
 from IPython.display import Audio, display, clear_output
 
-def play_audio(y, sr, autoplay=False):
-    display(Audio(y, rate=sr, autoplay=autoplay))
-
-# TODO: add the f_max=8000 term in melspectrogram (but this breaks the spectrogram_to_audio)
-def audio_to_spectrogram(y, sr, normalize=True):
-    spectrogram = librosa.feature.melspectrogram(y=y, sr=sr)
-    spectrogram = librosa.power_to_db(spectrogram, ref=np.max)
-    if normalize:
-        spectrogram = np.interp(spectrogram, (-80., 0.), (-1., +1.))
-    return spectrogram
-def audios_to_spectrograms(ys, sr, normalize=True):
+def complex_to_channels(spectrograms):
+    """Turn the complex spectrograms into channels.
+    (..., F, T) with dtype=complex -> (..., 2, F, T) with dtype=float
+    """
+    return np.stack((np.real(spectrograms), np.imag(spectrograms)), axis=-3)
+def channels_to_complex(spectrograms):
+    """Turn the channels into complex spectrograms.
+    (..., 2, F, T) with dtype=float -> (..., F, T) with dtype=complex
+    """
+    return spectrograms[..., 0, :, :] + 1.0j * spectrograms[..., 1, :, :]
+    
+def audio_to_spectrogram(ys, sr):
+    """Turn a series of audio signals into complex spectrograms."""
     spectrograms = []
     for y in ys:
-        spectrograms.append(audio_to_spectrogram(y, sr, normalize))
-    return np.array(spectrograms)
-def spectrogram_to_audio(spectrogram, sr, normalize=True):
-    if normalize:
-        spectrogram = np.interp(spectrogram, (-1., +1.), (-80., 0.))
-    spectrogram = librosa.db_to_power(spectrogram)
-    yp = librosa.feature.inverse.mel_to_audio(spectrogram, sr=sr)
-    return yp
+        spectrogram = librosa.stft(y=y, n_fft=256, hop_length=64)
+#         spectrogram = np.stack((np.real(spectrogram), np.imag(spectrogram)))
+        spectrograms.append(spectrogram)
+    spectrograms = np.array(spectrograms)    
+    return spectrograms
 
-# def my_audio_to_spectrogram(y, sr):
-#     return librosa.stft(y)
-
-# def my_spectrogram_to_audio(spectrogram, sr):
-#     return librosa.istft(spectrogram)
-
-
-def add_spectrograms(*spectrograms, normalize=True):
-    result = np.zeros_like(spectrograms[0])
+def spectrogram_to_audio(spectrograms, sr):
+    """Turn a series of complex spectrograms into audio signals"""
+    ys = []
     for spectrogram in spectrograms:
-        if normalize:
-            spectrogram = np.interp(spectrogram, (-1., +1.), (-80., 0.))
-        result += librosa.db_to_power(spectrogram)
-    result = librosa.power_to_db(result)
-    if normalize:
-        result = np.interp(result, (-80., 0.), (-1., +1.))
-    return result
+        yp = librosa.istft(spectrogram, hop_length=64)
+        ys.append(yp)
+    return np.array(ys)
+
+def add_spectrograms(*spectrograms):
+    """Add the spectrograms."""
+    return np.sum(spectrograms, axis=0)
 # first - second - third, etc.
-def subtract_spectrograms(*spectrograms, normalize=True):
-    result = spectrograms[0]
-    if normalize:
-        result = np.interp(result, (-1., +1.), (-80., 0.))
-    result = librosa.db_to_power(result)
-
-    for i in range(1, len(spectrograms)):
-        spectrogram = spectrograms[i]
-        if normalize:
-            spectrogram = np.interp(spectrogram, (-1., +1.), (-80., 0.))
-        result -= librosa.db_to_power(spectrogram)
-    result = librosa.power_to_db(result)
-    if normalize:
-        result = np.interp(result, (-80., 0.), (-1., +1.))
-    return result
-
+def subtract_spectrograms(*spectrograms):
+    """Subtract the first spectrogram given with the rest."""
+    return spectrograms[0] - add_spectrograms(spectrograms[1:])
 
 # for jupyter notebook only
+
+def play_audio(y, sr, autoplay=False):
+    """Play the signal y in a jupyter notebook."""
+    display(Audio(y, rate=sr, autoplay=autoplay))
+
 def show_audio(y, sr):
-    librosa.display.waveplot(y=y, sr=sr)
+    """Show the signal y in a jupyter notebook"""
+    librosa.display.waveplot(y=y, sr=sr,)
 
 def show_spectrogram(spectrogram, sr):
+    """Show the spectrogram in a jupyter notebook"""
     plt.figure(figsize=(10, 4))
-    librosa.display.specshow(spectrogram, x_axis='time', y_axis='mel', sr=sr, fmax=8000, cmap='gray')
+    librosa.display.specshow(np.abs(spectrogram), sr=sr, hop_length=64, x_axis='time', y_axis='hz',)
     plt.colorbar(format='%2.2f')
-    plt.title('Mel-frequency spectrogram')
+    plt.title('Frequency Spectrogram')
     plt.tight_layout()
-    
-
-# sets sample_length of y by either cropping or by duplicating to length
-def set_sample_length(y, sample_length):
-    if len(y) > sample_length:
-        y = y[:sample_length]
-    if len(y) < sample_length:
-        factor = sample_length//len(y)
-        oy = y.copy()
-        for i in range(factor-1):
-            y = np.concatenate((y, oy), axis=0)
-        leftover = sample_length - len(y)
-        y = np.concatenate((y, oy[:leftover]), axis=0)
-    return y

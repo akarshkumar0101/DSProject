@@ -7,14 +7,12 @@ import numpy as np
 
 from common_audio import set_sample_length
 
-rand = random.Random(42)
-
 audio_endings = ('.mp3', '.wav', '.flac')
 
 class AudioDataSet:
     """AudioDataset helps organize and load a audio dataset split into different directories. 
     Because audio takes up so much space, this will only load the clips that need to be used"""
-    def __init__(self, ds_dir, sr, duration, shuffle=True):
+    def __init__(self, ds_dir, sr, duration, shuffle=True, random_state=42):
         """Initalize with the directory of audio files ds_dir (will scan all subdirectories recursively), 
         the sample_rate sr you wish to have on the whole dataset, and duration of the clips in seconds."""
         self.sr = sr
@@ -29,6 +27,7 @@ class AudioDataSet:
                     self.files.append(os.path.join(r, file))
                     
         if shuffle:
+            rand = random.Random(random_state)
             rand.shuffle(self.files)
     
     def num_samples(self):
@@ -46,7 +45,7 @@ class AudioDataSet:
             pbar.reset(total=len(file_idxs))
         for file_idx in file_idxs:
             y, _ = librosa.load(self.files[file_idx], sr=sr, mono=True, offset=0.0, duration=duration)
-            y = set_sample_length(y, sample_length=int(sr*duration))
+            y = librosa.util.fix_length(y, int(sr*duration), mode='wrap')
             ys.append(y)
             if pbar is not None:
                 pbar.update(1)
@@ -61,6 +60,7 @@ class AudioDataSet:
         self.current_file_idx += batch_num
         return self.load(file_idxs, sr=sr, duration=duration, pbar=pbar)
     def reset_next(self):
+        """Reset the file index for the load_next function."""
         self.current_file_idx = 0
 
 def generate_tone(sr, duration, freq, amplitude=None):
