@@ -18,21 +18,32 @@ def channels_to_complex(spectrograms):
     """
     return spectrograms[..., 0, :, :] + 1.0j * spectrograms[..., 1, :, :]
     
-def audio_to_spectrogram(ys, sr):
-    """Turn a series of audio signals into complex spectrograms."""
+def audio_to_spectrogram(ys, sr, mel=False, n_fft=256, hop_length=64):
+    """
+    Turn a series of audio signals into complex spectrograms.
+    If mel is true, the mel spectrogram will be generated, else the normal one 
+    """
     spectrograms = []
     for y in ys:
-        spectrogram = librosa.stft(y=y, n_fft=256, hop_length=64)
+        spectrogram_params = {'y':y, 'n_fft':n_fft, 'hop_length':hop_length}
+        if mel:
+            spectrogram_params['sr']=sr
+        spectrogram = librosa.feature.melspectrogram(**spectrogram_params) if mel \
+            else librosa.stft(**spectrogram_params)
 #         spectrogram = np.stack((np.real(spectrogram), np.imag(spectrogram)))
         spectrograms.append(spectrogram)
     spectrograms = np.array(spectrograms)    
-    return spectrograms
+    return spectrograms   
 
-def spectrogram_to_audio(spectrograms, sr):
-    """Turn a series of complex spectrograms into audio signals"""
+def spectrogram_to_audio(spectrograms, sr, mel=False, n_fft=256, hop_length=64):
+    """
+    Turn a series of complex spectrograms into audio signals
+    If mel is true, it convert the spectrogram to stft, then apply the istft
+    """
     ys = []
     for spectrogram in spectrograms:
-        yp = librosa.istft(spectrogram, hop_length=64)
+        yp = librosa.istft(librosa.feature.inverse.mel_to_stft(spectrogram, n_fft=n_fft, sr=sr), hop_length=hop_length) if mel \
+            else librosa.istft(spectrogram, hop_length=hop_length)
         ys.append(yp)
     return np.array(ys)
 
@@ -54,12 +65,12 @@ def show_audio(y, sr):
     """Show the signal y in a jupyter notebook"""
     librosa.display.waveplot(y=y, sr=sr,)
 
-def show_spectrogram(spectrogram, sr, figsize=(10,4)):
+def show_spectrogram(spectrogram, sr, figsize=(10,4), y_axis='hz'):
     """Show the spectrogram in a jupyter notebook"""
     plt.figure(figsize=figsize)
-    librosa.display.specshow(spectrogram, sr=sr, hop_length=64, x_axis='time', y_axis='hz')
+    librosa.display.specshow(spectrogram, sr=sr, hop_length=64, x_axis='time', y_axis=y_axis)
     plt.colorbar(format='%2.2f')
-    plt.title('Frequency Spectrogram')
+    plt.title('Frequency Spectogram ( {} )'.format(y_axis))
     plt.tight_layout()
     
 def show_complete_spectrogram(spectrogram, sr):
@@ -72,3 +83,4 @@ def show_complete_spectrogram(spectrogram, sr):
     show_spectrogram(np.imag(spectrogram), sr, figsize=(5,2))
     plt.show()
     
+print('test')
