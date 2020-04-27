@@ -5,8 +5,6 @@ import random
 
 import numpy as np
 
-from common_audio import set_sample_length
-
 audio_endings = ('.mp3', '.wav', '.flac')
 
 class AudioDataSet:
@@ -53,7 +51,7 @@ class AudioDataSet:
 
     def load_next(self, batch_num, sr=None, duration=None, pbar=None):
         """Load the next batch_num files as an np array of shape (batch_num, sr*duration)"""
-        if self.current_file_idx + batch_num > self.length():
+        if self.current_file_idx + batch_num > self.num_samples():
             self.current_file_idx = 0
             
         file_idxs = range(self.current_file_idx, self.current_file_idx + batch_num)

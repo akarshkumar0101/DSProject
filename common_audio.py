@@ -54,10 +54,21 @@ def show_audio(y, sr):
     """Show the signal y in a jupyter notebook"""
     librosa.display.waveplot(y=y, sr=sr,)
 
-def show_spectrogram(spectrogram, sr):
+def show_spectrogram(spectrogram, sr, figsize=(10,4)):
     """Show the spectrogram in a jupyter notebook"""
-    plt.figure(figsize=(10, 4))
-    librosa.display.specshow(np.abs(spectrogram), sr=sr, hop_length=64, x_axis='time', y_axis='hz',)
+    plt.figure(figsize=figsize)
+    librosa.display.specshow(spectrogram, sr=sr, hop_length=64, x_axis='time', y_axis='hz')
     plt.colorbar(format='%2.2f')
     plt.title('Frequency Spectrogram')
     plt.tight_layout()
+    
+def show_complete_spectrogram(spectrogram, sr):
+    show_spectrogram(np.abs(spectrogram), sr, figsize=(5,2))
+    plt.show()
+    show_spectrogram(np.angle(spectrogram), sr, figsize=(5,2))
+    plt.show()
+    show_spectrogram(np.real(spectrogram), sr, figsize=(5,2))
+    plt.show()
+    show_spectrogram(np.imag(spectrogram), sr, figsize=(5,2))
+    plt.show()
+    
