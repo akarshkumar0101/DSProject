@@ -17,6 +17,23 @@ def channels_to_complex(spectrograms):
     (..., 2, F, T) with dtype=float -> (..., F, T) with dtype=complex
     """
     return spectrograms[..., 0, :, :] + 1.0j * spectrograms[..., 1, :, :]
+
+def complex_to_log_magnitude_phase_channels(spectrograms):
+    """
+    Turn the complex spectrograms into log(magnitude) and phase channels.
+    (..., F, T) with dtype=complex -> (..., 2, F, T) with dtype=float
+    """
+    return np.stack((np.log(np.abs(spectrograms)), np.angle(spectrograms)),axis=-3)
+    
+    
+def log_mag_phase_to_complex(spectrograms):
+    """Turn the log and phase channels channels into complex spectrograms.
+    (..., 2, F, T) with dtype=float -> (..., F, T) with dtype=complex
+    uses euler's formula to convert back: complex = magnitude*e^(j*phase_angle)
+    """
+    return np.exp(spectrograms[..., 0, :, :]) * np.exp(1.0j * spectrograms[..., 1, :, :])
+
+
     
 def audio_to_spectrogram(ys, sr, mel=False, n_fft=256, hop_length=64):
     """
