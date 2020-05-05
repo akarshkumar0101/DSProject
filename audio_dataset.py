@@ -49,17 +49,42 @@ class AudioDataSet:
                 pbar.update(1)
         return np.array(ys)
 
-    def load_next(self, batch_num, sr=None, duration=None, pbar=None):
-        """Load the next batch_num files as an np array of shape (batch_num, sr*duration)"""
-        if self.current_file_idx + batch_num > self.num_samples():
+    def load_next(self, batch_size, sr=None, duration=None, pbar=None):
+        """Load the next batch_size files as an np array of shape (batch_size, sr*duration)"""
+        if self.current_file_idx + batch_size > self.num_samples():
             self.current_file_idx = 0
             
-        file_idxs = range(self.current_file_idx, self.current_file_idx + batch_num)
-        self.current_file_idx += batch_num
+        file_idxs = range(self.current_file_idx, self.current_file_idx + batch_size)
+        self.current_file_idx += batch_size
         return self.load(file_idxs, sr=sr, duration=duration, pbar=pbar)
     def reset_next(self):
         """Reset the file index for the load_next function."""
         self.current_file_idx = 0
+
+class FastAudioDataSet:
+    def __init__(self, fads_file):
+        self.data = np.load(fads_file)
+        self.current_idx = 0
+    
+    def get_data(self):
+        return self.data
+    
+    def num_samples(self):
+        return len(self.data)
+    
+    def get_idxs(self, idxs):
+        return self.data[idxs]
+    
+    def get_next(self, batch_size):
+        if self.current_idx + batch_size > self.num_samples():
+            self.current_idx = 0
+        idxs = range(self.current_idx, self.current_idx+batch_size)
+        self.current_idx += batch_size
+        return self.get_idxs(idxs)
+    
+    def reset_next(self):
+        self.current_idx = 0
+    
 
 def generate_tone(sr, duration, freq, amplitude=None):
     """generate a tone or tones with a sample_rate sr (float), duration in seconds, and the frequencies and amplitudes (np arrays)"""
