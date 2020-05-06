@@ -7,8 +7,9 @@ import librosa
 import librosa.display
 
 class AudioSSNNIO():
+    """Class to control Neural Network Input/Output for project in Audio Source Separation"""
     def __init__(self, sr, duration, num_sources):
-        """Initialize with sr and duration. """
+        """Initialize with sr, duration, and the number of sources."""
         self.sr = sr
         self.duration = duration
         self.num_sources = num_sources
@@ -21,28 +22,46 @@ class AudioSSNNIO():
         raise NotImplementedError
         
     def audio_to_nn_input(self, X_batch):
-        """Transform the given mixed signal for the neural network to input."""
+        """Transform the given mixed signal for the neural network to input.
+        X_batch will have shape (batch_size, len(y)) where len(y) = sr*duration."""
         raise NotImplementedError
     def audio_to_nn_output(self, Y_batch):
-        """Transform the given source separated signals for the neural network to output."""
+        """Transform the given source separated signals for the neural network to output.
+        Y_batch will have shape (batch_size, num_sources, len(y)) where len(y) = sr*duration."""
         raise notImplementedError
+        
+    def nn_input_to_audio(self, X_batch):
+        """Transform the input of the neural network back into usable audio.
+        X_batch will have shape (batch_size, nn_num_input_channels(), h, w) where h, w are 
+        determined by the size of the input spectrum in audio_to_nn_input(...)."""
+        raise NotImplementedError
 
     def nn_output_to_audio(self, Y_batch):
-        """Transform the output of the neural network back into usable audio."""
+        """Transform the output of the neural network back into usable audio.
+        Y_batch will have shape (batch_size, nn_num_output_channels(), h, w) where h, w are 
+        determined by the size of the input spectrum in audio_to_nn_output(...)."""
         raise NotImplementedError
+        
+    def show_play_nn_input(self, X_batch, ts=['raw', 'audio'], sample_idx=0):
+        """Convenience wrapper to fast show and play network input."""
+        y = self.nn_input_to_audio(X_batch)[sample_idx]
+        return self.show_play_audio(y, ts)
+    def show_play_nn_output(self, Y_batch, ts=['raw', 'audio'], sample_idx=0):
+        """Convenience wrapper to fast show and play network output."""
+        y = self.nn_output_to_audio(Y_batch)[sample_idx]
+        return self.show_play_audio(y, ts)
     
     # for jupyter notebook only
-    def play_audio(self, y):
-        """Play the signal y in a jupyter notebook."""
-        display(Audio(y, rate=self.sr))
-
-    def show_audio(self, y, t='raw'):
-        """Show the signal y in a jupyter notebook"""
-        if t == 'raw':
+    def show_play_audio(self, y, ts=['raw', 'audio']):
+        """Show the signal y in a jupyter notebook. 
+        ts determines different ways you want to show the signal. 
+        ts can have:
+        -'raw'
+        -'audio'
+        other options can be added on by different implementations."""
+        
+        if 'raw' in ts:
             librosa.display.waveplot(y=y, sr=self.sr)
-    
-    def show_and_play_audio(self, y, t='raw'):
-        self.show_audio(y, t=t)
-        plt.show()
-        self.play_audio(y)
+        if 'audio' in ts:
+            display(Audio(y, rate=self.sr))
 

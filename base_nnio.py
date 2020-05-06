@@ -22,31 +22,33 @@ class BaseNNIO(audio_ss_nnio.AudioSSNNIO):
         for source_idx in range(self.num_sources-1):
             res.append(self.complex_to_channels(self.audio_to_spectrogram(Y_batch[:, source_idx, :])))
         return np.concatenate(res, axis=1)
+    def nn_input_to_audio(self, X_batch):
+        return self.spectrogram_to_audio(self.channels_to_complex(X_batch))
     def nn_output_to_audio(self, Y_batch):
         return self.spectrogram_to_audio(self.channels_to_complex(Y_batch))
         
     # for jupyter notebook only
-    def show_audio(self, y, t='raw'):
-        if t == 'raw':
-            librosa.display.waveplot(y=y, sr=self.sr)
-        else:
-            spectrogram = self.audio_to_spectrogram([y])[0]
-            if t == 'mag':
-                plt.figure(figsize=(10,4))
-                librosa.display.specshow(np.abs(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz')
-                plt.colorbar(format='%2.2f')
-                plt.title('Magnitude of STFT')
-                plt.tight_layout()
-            elif t == 'detail':
-                fig, axs = plt.subplots(2,2, figsize=(10,4))
-                axs[0, 0].set_title('Magnitude')
-                axs[0, 1].set_title('Phase')
-                axs[1, 0].set_title('Real Part')
-                axs[1, 1].set_title('Imag Part')
-                librosa.display.specshow(np.abs(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[0, 0])
-                librosa.display.specshow(np.angle(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[0, 1])
-                librosa.display.specshow(np.real(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[1, 0])
-                librosa.display.specshow(np.imag(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[1, 1])
+    def show_play_audio(self, y, ts=['raw', 'audio']):
+        spectrogram = self.audio_to_spectrogram([y])[0]
+        if 'mag' in ts:
+            plt.figure(figsize=(10,4))
+            librosa.display.specshow(np.abs(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz')
+            plt.colorbar(format='%2.2f')
+            plt.title('Magnitude of STFT')
+            plt.tight_layout()
+            plt.show()
+        if 'detail' in ts:
+            fig, axs = plt.subplots(2,2, figsize=(10,4))
+            axs[0, 0].set_title('Magnitude')
+            axs[0, 1].set_title('Phase')
+            axs[1, 0].set_title('Real Part')
+            axs[1, 1].set_title('Imag Part')
+            librosa.display.specshow(np.abs(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[0, 0])
+            librosa.display.specshow(np.angle(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[0, 1])
+            librosa.display.specshow(np.real(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[1, 0])
+            librosa.display.specshow(np.imag(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[1, 1])
+            plt.show()
+        super().show_play_audio(y, ts)
     
     
     def complex_to_channels(self, spectrograms):
