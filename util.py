@@ -51,8 +51,11 @@ def to_np(*arrays):
 
 def clear_mem(print_mem=False):
     gc.collect()
-    torch.cuda.empty_cache()
-    if print_mem:
-        print('total: ', torch.cuda.get_device_properties(0).total_memory/1e9)
-        print('cached: ', torch.cuda.memory_cached()/1e9)
-        print('allocated: ', torch.cuda.memory_allocated()/1e9)
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        if print_mem:
+            print('total: ', torch.cuda.get_device_properties(0).total_memory/1e9)
+            print('cached: ', torch.cuda.memory_cached()/1e9)
+            print('allocated: ', torch.cuda.memory_allocated()/1e9)
+        
+        
