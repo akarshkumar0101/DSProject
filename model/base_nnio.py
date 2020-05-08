@@ -62,6 +62,14 @@ class BaseNNIO(audio_ss_nnio.AudioSSNNIO):
         (..., 2, F, T) with dtype=float -> (..., F, T) with dtype=complex
         """
         return spectrograms[..., 0, :, :] + 1.0j * spectrograms[..., 1, :, :]
+    
+    def complex_to_normalized_mel(self, spectrograms):
+        """Converts the spectrograms to mel-cepstrum scale then normalizes over each individual data sample.       
+        formula: M(f) = 1125*ln(1+f/700)
+        Returns np array with mel_spectrogram and phase
+        Note: Use the normalized mel_spectrogram in model, and keep the phase information handy to invert audio later
+        (..., F, T) with dtype=complex -> (..., 2, F, T) with dtype=float
+        """
 
 
     def audio_to_spectrogram(self, ys):
