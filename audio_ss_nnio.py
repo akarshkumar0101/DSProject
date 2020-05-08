@@ -3,23 +3,12 @@ import numpy as np
 
 from IPython.display import Audio, display
 
-import librosa
-import librosa.display
-
 class AudioSSNNIO():
     """Class to control Neural Network Input/Output for project in Audio Source Separation"""
-    def __init__(self, sr, duration, num_sources):
+    def __init__(self, sr, duration):
         """Initialize with sr, duration, and the number of sources."""
         self.sr = sr
         self.duration = duration
-        self.num_sources = num_sources
-        
-    def nn_num_input_channels(self):
-        """The number of input channels you wish the neural network to process."""
-        raise NotImplementedError
-    def nn_num_output_channels(self):
-        """The number of output channels you wish the neural network to learn."""
-        raise NotImplementedError
         
     def audio_to_nn_input(self, X_batch):
         """Transform the given mixed signal for the neural network to input.
@@ -27,8 +16,8 @@ class AudioSSNNIO():
         raise NotImplementedError
     def audio_to_nn_output(self, Y_batch):
         """Transform the given source separated signals for the neural network to output.
-        Y_batch will have shape (batch_size, num_sources, len(y)) where len(y) = sr*duration."""
-        raise notImplementedError
+        Y_batch will have shape (batch_size, num_sources=2, len(y)) where len(y) = sr*duration."""
+        raise NotImplementedError
         
     def nn_input_to_audio(self, X_batch):
         """Transform the input of the neural network back into usable audio.
@@ -61,7 +50,8 @@ class AudioSSNNIO():
         other options can be added on by different implementations."""
         
         if 'raw' in ts:
-            librosa.display.waveplot(y=y, sr=self.sr)
+            plt.plot(np.linspace(0, self.duration, len(y)), y)
+            plt.show()
         if 'audio' in ts:
             display(Audio(y, rate=self.sr))
 
