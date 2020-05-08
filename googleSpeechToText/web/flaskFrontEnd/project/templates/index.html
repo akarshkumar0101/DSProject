@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <meta charset="UTF-8">
+    <title>Flask React</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- styles -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bower_components/bootstrap/dist/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <div class="container">
+      <h1>Audio files</h1>
+      <form method="POST" action="/">
+        <section class="formA">
+          <div class="left">
+            <h2>From Terminal:</h2>
+
+            <select class="select-css" name="source" method="GET" action="/">
+              {% for colour in colours %}
+              <option value="{{ colour }}" SELECTED>{{ colour }}</option
+              >" {% endfor %}
+            </select>
+          </div>
+
+        </section>
+        <br />
+        <br />
+        <br />
+        <div class="center">
+          <h2>Get Transcript:</h2>
+          <input type="date" name="date" />
+          <br />
+          <br />
+          <input type="submit" class="Search" value="Speech to Text" />
+        </div>
+      </form>
+      <br>
+      <div class="bodyContainer">
+        <div class="cardTitle">
+          {%if date is not none%}
+          <h2>{{ date }}</h2>
+          {%endif%}
+
+        </div>
+      </div>
+
+      <br>
+      <br />
+      <br />
+      <br />
+      <div id="main"></div>
+    </div>
+    <!-- scripts -->
+    <script src="{{ url_for('static', filename='bower_components/react/react.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bower_components/react/react-dom.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/js/main.js') }}"></script>
+  </body>
+</html>

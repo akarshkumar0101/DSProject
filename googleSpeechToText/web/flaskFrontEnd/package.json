@@ -1,0 +1,27 @@
+{
+  "name": "flask",
+  "version": "1.0.0",
+  "description": "Be sure to check out the blog posts-",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realpython/ultimate-flask-front-end.git"
+  },
+  "author": "miguel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/realpython/ultimate-flask-front-end/issues"
+  },
+  "homepage": "https://github.com/realpython/ultimate-flask-front-end#readme",
+  "devDependencies": {
+    "bower": "^1.8.8",
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-browser": "^2.1.4",
+    "gulp-size": "^2.1.0",
+    "reactify": "^1.1.1"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "flask",
+  "homepage": "https://github.com/realpython/ultimate-flask-front-end",
+  "authors": [
+    "miguel"
+  ],
+  "description": "",
+  "main": "",
+  "license": "UT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "^3.3.6",
+    "react": "^15.1.0"
+  }
+}
