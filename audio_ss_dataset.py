@@ -1,24 +1,23 @@
-import numpy as np
+import torch
 
-from torch.utils import data
-
-class AudioSSDS(data.Dataset):
+class AudioSSDS(torch.utils.data.Dataset):
     # sources is a list of sources
     def __init__(self, sr, duration, sources=None):
         if isinstance(sources, tuple):
             sources = list(sources)
         if isinstance(sources, list):
-            for i, source in enumerate(sources):
-                if isinstance(source, str):
-                    source = np.load(source)
-                sources[i] = source
-            sources = np.stack(sources, axis=1)
-            
-        self.num_sources = len(sources)
+#             for i, source in enumerate(sources):
+# #                 if isinstance(source, str):
+# #                     source = np.load(source)
+#                 sources[i] = source
+            sources = torch.stack(sources, dim=1)
+    
+        
+        self.num_sources = sources.shape[1]
         self.sr = sr
         self.duration = duration
         
-        self.X = sources.sum(axis=1)
+        self.X = sources.sum(dim=1)
         self.Y = sources
         
     def __len__(self):

@@ -2,37 +2,77 @@ import audio_ss_nnio
 
 import matplotlib.pyplot as plt
 
-import numpy as np
-
-import librosa
-import librosa.display
-
+import torch
+import torchaudio
 
 class BaseNNIO(audio_ss_nnio.AudioSSNNIO):
-    def __init__(self, sr, duration, num_sources):
-        super().__init__(sr, duration, num_sources)
-    def nn_num_input_channels(self):
-        return 2
-    def nn_num_output_channels(self):
-        return 2
+    def __init__(self, sr, duration, n_fft=300, normalized=False, magphase_representation=False):
+        super().__init__(sr, duration)
+        self.n_fft = n_fft
+        self.normalized = normalized
+        self.magphase_representation = magphase_representation
+        
     def audio_to_nn_input(self, X_batch):
-        return self.complex_to_channels(self.audio_to_spectrogram(X_batch))
+        # X_batch is (batch_size, len(y))
+        
+        X_batch = X_batch.stft(n_fft=self.n_fft, normalized=self.normalized) #stft
+        if self.magphase_representation: # magphase
+            X_batch_mag, X_batch_phase = torchaudio.functional.magphase(X_batch)
+            X_batch = torch.stack((X_batch_mag, X_batch_phase), dim=-1)
+        X_batch =  X_batch.permute(0, -1, -3, -2) # shape
+        return X_batch
+    
     def audio_to_nn_output(self, Y_batch):
-        res = []
-        for source_idx in range(self.num_sources-1):
-            res.append(self.complex_to_channels(self.audio_to_spectrogram(Y_batch[:, source_idx, :])))
-        return np.concatenate(res, axis=1)
+        # Y_batch is (batch_size, num_sources=2, len(y))
+        Y_batch = Y_batch[:, 0, :].stft(n_fft=self.n_fft, normalized=self.normalized) #stft
+        if self.magphase_representation: #magphase
+            Y_batch_mag, Y_batch_phase = torchaudio.functional.magphase(Y_batch)
+            Y_batch = torch.stack((Y_batch_mag, Y_batch_phase), dim=-1)
+        Y_batch = Y_batch.permute(0, -1, -3, -2) # shape
+        return Y_batch
+    
     def nn_input_to_audio(self, X_batch):
-        return self.spectrogram_to_audio(self.channels_to_complex(X_batch))
-    def nn_output_to_audio(self, Y_batch):
-        return self.spectrogram_to_audio(self.channels_to_complex(Y_batch))
+        X_batch = X_batch.permute(0, -2, -1, -3) # shape
+        if self.magphase_representation: # magphase
+            X_batch_real = X_batch[..., 0] * torch.cos(X_batch[..., 1])
+            X_batch_imag = X_batch[..., 0] * torch.sin(X_batch[..., 1])
+            X_batch = torch.stack((X_batch_real, X_batch_imag), dim=-1)
+        
+        X_batch = torchaudio.functional.istft(X_batch, n_fft=self.n_fft, #istft
+                                              normalized=self.normalized, length=int(self.sr*self.duration))
+        
+        return X_batch
+    def nn_output_to_audio(self, Y_batch, X_batch, transform_X_batch=True):
+        Y_batch = Y_batch.permute(0, -2, -1, -3) # shape
+        if self.magphase_representation: # magphase
+            Y_batch_real = Y_batch[..., 0] * torch.cos(Y_batch[..., 1])
+            Y_batch_imag = Y_batch[..., 0] * torch.sin(Y_batch[..., 1])
+            Y_batch = torch.stack((Y_batch_real, Y_batch_imag), dim=-1)
+        
+        Y_batch = torchaudio.functional.istft(Y_batch, n_fft=self.n_fft, #istft
+                                              normalized=self.normalized, length=int(self.sr*self.duration))
+        
+        if transform_X_batch:
+            X_batch = self.nn_input_to_audio(X_batch)
+        
+        Y_batch_noise = X_batch - Y_batch
+        
+        Y_batch = torch.stack((Y_batch, Y_batch_noise), dim=-2)
+        return Y_batch
+    def show_play_nn_output(self, Y_batch, X_batch, transform_X_batch=True, ts=['raw', 'audio'], sample_idx=0):
+        """Convenience wrapper to fast show and play network output."""
+        y = self.nn_output_to_audio(Y_batch, X_batch, transform_X_batch)[sample_idx][0]
+        return self.show_play_audio(y, ts)
+        
         
     # for jupyter notebook only
     def show_play_audio(self, y, ts=['raw', 'audio']):
-        spectrogram = self.audio_to_spectrogram([y])[0]
+        spectrogram = y.stft(n_fft=self.n_fft, normalized=self.normalized)
+        spec_mag, spec_phase = torchaudio.functional.magphase(spectrogram)
+        
         if 'mag' in ts:
             plt.figure(figsize=(10,4))
-            librosa.display.specshow(np.abs(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz')
+            plt.imshow(spec_mag.numpy())
             plt.colorbar(format='%2.2f')
             plt.title('Magnitude of STFT')
             plt.tight_layout()
@@ -43,51 +83,10 @@ class BaseNNIO(audio_ss_nnio.AudioSSNNIO):
             axs[0, 1].set_title('Phase')
             axs[1, 0].set_title('Real Part')
             axs[1, 1].set_title('Imag Part')
-            librosa.display.specshow(np.abs(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[0, 0])
-            librosa.display.specshow(np.angle(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[0, 1])
-            librosa.display.specshow(np.real(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[1, 0])
-            librosa.display.specshow(np.imag(spectrogram), sr=self.sr, hop_length=64, x_axis='time', y_axis='hz', ax=axs[1, 1])
+            
+            axs[0, 0].imshow(spec_mag.numpy())
+            axs[0, 1].imshow(spec_phase.numpy())
+            axs[1, 0].imshow(spectrogram[..., 0].numpy())
+            axs[1, 1].imshow(spectrogram[..., 1].numpy())
             plt.show()
         super().show_play_audio(y, ts)
-    
-    
-    def complex_to_channels(self, spectrograms):
-        """Turn the complex spectrograms into channels.
-        (..., F, T) with dtype=complex -> (..., 2, F, T) with dtype=float
-        """
-        return np.stack((np.real(spectrograms), np.imag(spectrograms)), axis=-3)
-
-    def channels_to_complex(self, spectrograms):
-        """Turn the channels into complex spectrograms.
-        (..., 2, F, T) with dtype=float -> (..., F, T) with dtype=complex
-        """
-        return spectrograms[..., 0, :, :] + 1.0j * spectrograms[..., 1, :, :]
-    
-    def complex_to_normalized_mel(self, spectrograms):
-        """Converts the spectrograms to mel-cepstrum scale then normalizes over each individual data sample.       
-        formula: M(f) = 1125*ln(1+f/700)
-        Returns np array with mel_spectrogram and phase
-        Note: Use the normalized mel_spectrogram in model, and keep the phase information handy to invert audio later
-        (..., F, T) with dtype=complex -> (..., 2, F, T) with dtype=float
-        """
-
-
-    def audio_to_spectrogram(self, ys):
-        """Turn a series of audio signals into complex spectrograms."""
-        spectrograms = []
-        for y in ys:
-            spectrogram = librosa.stft(y=y, n_fft=256, hop_length=64)
-            spectrograms.append(spectrogram)
-        spectrograms = np.array(spectrograms)    
-        return spectrograms
-
-    def spectrogram_to_audio(self, spectrograms):
-        """Turn a series of complex spectrograms into audio signals"""
-        ys = []
-        for spectrogram in spectrograms:
-            yp = librosa.istft(spectrogram, hop_length=64)
-            ys.append(yp)
-        return np.array(ys)
-
-
-    
