@@ -6,58 +6,36 @@ import torch
 import torchaudio
 
 class BaseNNIO(audio_ss_nnio.AudioSSNNIO):
-    def __init__(self, sr, duration, n_fft=300, normalized=False, magphase_representation=False):
+    def __init__(self, sr, duration, n_fft=300, normalized=False):
         super().__init__(sr, duration)
         self.n_fft = n_fft
         self.normalized = normalized
-        self.magphase_representation = magphase_representation
         
     def audio_to_nn_input(self, X_batch):
         # X_batch is (batch_size, len(y))
         
         X_batch = X_batch.stft(n_fft=self.n_fft, normalized=self.normalized) #stft
-        if self.magphase_representation: # magphase
-            X_batch_mag, X_batch_phase = torchaudio.functional.magphase(X_batch)
-            X_batch = torch.stack((X_batch_mag, X_batch_phase), dim=-1)
         X_batch =  X_batch.permute(0, -1, -3, -2) # shape
         return X_batch
     
     def audio_to_nn_output(self, Y_batch):
         # Y_batch is (batch_size, num_sources=2, len(y))
         Y_batch = Y_batch[:, 0, :].stft(n_fft=self.n_fft, normalized=self.normalized) #stft
-        if self.magphase_representation: #magphase
-            Y_batch_mag, Y_batch_phase = torchaudio.functional.magphase(Y_batch)
-            Y_batch = torch.stack((Y_batch_mag, Y_batch_phase), dim=-1)
         Y_batch = Y_batch.permute(0, -1, -3, -2) # shape
         return Y_batch
     
     def nn_input_to_audio(self, X_batch):
         X_batch = X_batch.permute(0, -2, -1, -3) # shape
-        if self.magphase_representation: # magphase
-            X_batch_real = X_batch[..., 0] * torch.cos(X_batch[..., 1])
-            X_batch_imag = X_batch[..., 0] * torch.sin(X_batch[..., 1])
-            X_batch = torch.stack((X_batch_real, X_batch_imag), dim=-1)
         
         X_batch = torchaudio.functional.istft(X_batch, n_fft=self.n_fft, #istft
                                               normalized=self.normalized, length=int(self.sr*self.duration))
         
         return X_batch
-    def nn_output_to_audio(self, Y_batch, X_batch, transform_X_batch=True):
+    def nn_output_to_audio(self, Y_batch):
         Y_batch = Y_batch.permute(0, -2, -1, -3) # shape
-        if self.magphase_representation: # magphase
-            Y_batch_real = Y_batch[..., 0] * torch.cos(Y_batch[..., 1])
-            Y_batch_imag = Y_batch[..., 0] * torch.sin(Y_batch[..., 1])
-            Y_batch = torch.stack((Y_batch_real, Y_batch_imag), dim=-1)
         
         Y_batch = torchaudio.functional.istft(Y_batch, n_fft=self.n_fft, #istft
                                               normalized=self.normalized, length=int(self.sr*self.duration))
-        
-        if transform_X_batch:
-            X_batch = self.nn_input_to_audio(X_batch)
-        
-        Y_batch_noise = X_batch - Y_batch
-        
-        Y_batch = torch.stack((Y_batch, Y_batch_noise), dim=-2)
         return Y_batch
     def show_play_nn_output(self, Y_batch, X_batch, transform_X_batch=True, ts=['raw', 'audio'], sample_idx=0):
         """Convenience wrapper to fast show and play network output."""
