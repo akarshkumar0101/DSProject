@@ -3,6 +3,7 @@
 
 
 from mir_eval.separation import bss_eval_sources
+<<<<<<< HEAD
 from mir_eval.separation import evaluate
 
 
@@ -11,6 +12,10 @@ def evaluat(reference_sources, target_sources):
 
 
 def evaluate_sources(reference_sources, estimated_sources):
+=======
+
+def evaluate_sources(reference_sources, target_sources):
+>>>>>>> 86025c8f668dd0c7c2ab34ca566d9496ff75d107
     """
     Parameters: convert the .wav files into audio before inputting
     ----------
@@ -29,6 +34,7 @@ def evaluate_sources(reference_sources, estimated_sources):
     sar : np.ndarray, shape=(nsrc,)
         vector of Sources to Artifacts Ratios (SAR)
     """
+<<<<<<< HEAD
     sdr, sir, sar, perm = bss_eval_sources(reference_sources, estimated_sources, compute_permutation=True)
     return {
         'sdr': sdr,
@@ -39,3 +45,11 @@ def evaluate_sources(reference_sources, estimated_sources):
 
 
 print('test')
+=======
+    sdr, sir, sar, _ = bss_eval_sources(reference_sources, target_sources, compute_permutation=False)
+    return {
+        'sdr': sdr,
+        'sir': sir,
+        'sar': sar
+    }
+>>>>>>> 86025c8f668dd0c7c2ab34ca566d9496ff75d107
