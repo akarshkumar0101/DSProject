@@ -16,7 +16,7 @@ from discard_tone import *
 import urllib.request
 from U_Net_model import unet
 from Prediction import prediction
-from scipy.io.wavfile import write
+from scipy.io.wavfile import write, read
 
 
 app = Flask(__name__)
@@ -47,6 +47,7 @@ def speech_recognize():
     model = args['model']
     mix = args['mix']
     audio_file = url_to_audio_file(uri)
+    #return audio_file
     '''
     currently we only support tone
     '''
@@ -81,7 +82,6 @@ def speech_recognize():
             attachment_filename=file_name
         )
     elif model == "Dog":
-        audio_file = url_to_audio_file(uri)
         weights_path = './dog_model'
         model = unet()
         # audio_input_prediction = [audio_file]
@@ -89,21 +89,24 @@ def speech_recognize():
         min_duration = 1
         frame_length = 8064
         hop_length_frame = 8064
-        n_fft = 255
+        n_fft=256
         hop_length_fft = 63
         #we need to split the arbitrary length audio file into 
-
-        sr, data_hold = scipy.io.wavfile.read(audio_file)  
-        broken = [data_hold[x:x+sr] for x in range(0, len(data_hold), sr)]
+        
+        data_hold = audio_file_to_array(audio_file, 8000)
+        sr=8000
+       # return str(len(data_hold))
+        broken = audio_array_to_duration_segments(data_hold, 8000, 1.0)
         one_sec_files = []
         for i in broken:
-            t = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+            t = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))[1]
             file_name = './audioFiles/'+t+'.wav'
-            i = np.array(i,dtype=np.float32)
-            write(t, sr, i)
-            one_sec_files.append(t)
-
-
+            nparray = np.array(i)
+            print(type(nparray))
+            write(file_name, sr, nparray)
+            one_sec_files.append(file_name)
+        print(one_sec_files)
+       
         final_sound_list = []
         for one_sec_file in one_sec_files:
             denoised_data = prediction(weights_path, model, [one_sec_file], sample_rate, 
@@ -156,4 +159,4 @@ def sample_recognize():
     }
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0', port=80, debug=False)

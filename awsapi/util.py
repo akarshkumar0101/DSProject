@@ -13,7 +13,7 @@ def generate_tone(sr, duration, freq, amplitude=None):
     freq, amplitude = freq[:, None], amplitude[:, None]
     length = int(sr*duration)
     full = np.tile(np.arange(length), (freq.shape[1], 1))
-    y = amplitude * np.sin(2*np.pi/sr * freq * full)
+    y = amplitude * np.cos(2*np.pi/sr * freq * full)
     return y
 
 def get_batch_indices(all_indices, batch_size, shuffle=True, drop_last=False):
