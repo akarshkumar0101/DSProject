@@ -84,7 +84,7 @@ def speech_recognize():
         audio_file = url_to_audio_file(uri)
         weights_path = './dog_model'
         model = unet()
-        audio_input_prediction = [audio_file]
+        # audio_input_prediction = [audio_file]
         sample_rate = 8000
         min_duration = 1
         frame_length = 8064
@@ -92,12 +92,28 @@ def speech_recognize():
         n_fft = 255
         hop_length_fft = 63
         #we need to split the arbitrary length audio file into 
-        denoised_data = prediction(weights_path, model, audio_input_prediction, sample_rate, 
-                                min_duration, frame_length, hop_length_frame, n_fft, hop_length_fft)
-        file_name = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+        sr, data_hold = scipy.io.wavfile.read(audio_file)  
+        broken = [data_hold[x:x+sr] for x in range(0, len(data_hold), sr)]
+        one_sec_files = []
+        for i in broken:
+            t = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+            file_name = './audioFiles/'+t+'.wav'
+            i = np.array(i,dtype=np.float32)
+            write(t, sr, i)
+            one_sec_files.append(t)
+
+
+        final_sound_list = []
+        for one_sec_file in one_sec_files:
+            denoised_data = prediction(weights_path, model, [one_sec_file], sample_rate, 
+                                    min_duration, frame_length, hop_length_frame, n_fft, hop_length_fft)
+            final_sound_list.extend(denoised_data.tolist())
+
+        file_name = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))[1]
         file_name = file_name+'.wav'
         path_to_file='./audioFiles/'+file_name
-        librosa.output.write_wav(path_to_file, denoised_data[0], denoised_data[1])
+        librosa.output.write_wav(path_to_file, 8000, numpy.array(final_sound_list))
         return send_file(
             path_to_file, 
             mimetype="audio/wav", 
